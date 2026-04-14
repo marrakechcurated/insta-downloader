@@ -2,25 +2,18 @@
 
 Web app locale per scaricare foto e video da Instagram (solo profili pubblici).
 
-## Installazione
+## Installazione e avvio
 
 ```bash
 # Clona il repo
 git clone https://github.com/marrakechcurated/insta-downloader.git ~/insta-downloader
 
-# Entra nella cartella
+# Avvia (la prima volta installa tutto da solo)
 cd ~/insta-downloader
-
-# Installa le dipendenze Python
-pip3 install -r requirements.txt
+./start.sh
 ```
 
-## Avvio
-
-```bash
-cd ~/insta-downloader
-python3 app.py
-```
+Lo script `start.sh` crea automaticamente un virtual environment Python, installa le dipendenze, e avvia il server.
 
 Apri **http://localhost:5000** nel browser.
 
@@ -41,13 +34,14 @@ Apri **http://localhost:5000** nel browser.
 ### Modalita 3 — Da terminale (batch)
 ```bash
 cd ~/insta-downloader
+source venv/bin/activate
 python3 batch.py https://www.instagram.com/p/ABC123/ https://www.instagram.com/reel/XYZ789/
 ```
 
 ### Modalita 4 — Claude Code scarica per te
 Il redattore da a Claude Code una lista di link. Claude Code lancia:
 ```bash
-cd ~/insta-downloader && python3 batch.py URL1 URL2 URL3
+cd ~/insta-downloader && source venv/bin/activate && python3 batch.py URL1 URL2 URL3
 ```
 
 ## Dove finiscono i file
@@ -74,7 +68,7 @@ Instagram limita le richieste. Aspetta qualche minuto e riprova.
 ### Instaloader non funziona piu
 Instagram cambia spesso le API. Aggiorna:
 ```bash
-pip3 install --upgrade instaloader
+cd ~/insta-downloader && source venv/bin/activate && pip install --upgrade instaloader
 ```
 
 ## Limiti

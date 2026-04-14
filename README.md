@@ -7,8 +7,7 @@ Web app locale per scaricare foto e video da Instagram. Zero pubblicita, zero tr
 ```bash
 git clone https://github.com/marrakechcurated/insta-downloader.git ~/insta-downloader
 cd ~/insta-downloader
-pip3 install -r requirements.txt
-python3 app.py
+./start.sh
 ```
 
 Apri **http://localhost:5000** nel browser.
