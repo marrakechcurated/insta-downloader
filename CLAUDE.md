@@ -15,12 +15,12 @@ cd ~/insta-downloader
 
 Lo script `start.sh` crea automaticamente un virtual environment Python, installa le dipendenze, e avvia il server.
 
-Apri **http://localhost:5000** nel browser.
+Apri **http://localhost:5050** nel browser.
 
 ## Come si usa
 
 ### Modalita 1 — Frontend web (singolo URL)
-1. Apri `http://localhost:5000`
+1. Apri `http://localhost:5050`
 2. Incolla un URL Instagram (post, reel, carousel)
 3. Clicca "Anteprima" per vedere cosa scaricherai
 4. Clicca "Scarica tutto"

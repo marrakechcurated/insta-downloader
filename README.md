@@ -10,7 +10,7 @@ cd ~/insta-downloader
 ./start.sh
 ```
 
-Apri **http://localhost:5000** nel browser.
+Apri **http://localhost:5050** nel browser.
 
 ## Funzionalita
 
