@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insta Downloader</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 56rem;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #737373;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        /* --- Tabs --- */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #262626;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: #737373;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { color: #e5e5e5; }
+        .tab.active {
+            color: #f59e0b;
+            border-bottom-color: #f59e0b;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* --- Input area --- */
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"], textarea {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 0.5rem;
+            color: #e5e5e5;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #f59e0b;
+        }
+
+        textarea {
+            min-height: 8rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .hint {
+            color: #525252;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 0.875rem 1.75rem;
+            background: #f59e0b;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover { background: #fbbf24; }
+        button:disabled {
+            background: #404040;
+            color: #737373;
+            cursor: not-allowed;
+        }
+
+        /* --- Preview --- */
+        .preview {
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .preview.visible { display: block; }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .preview-owner {
+            font-weight: 600;
+            color: #f59e0b;
+        }
+
+        .preview-meta {
+            color: #737373;
+            font-size: 0.85rem;
+        }
+
+        .preview-caption {
+            color: #a3a3a3;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .media-item {
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: #262626;
+        }
+
+        .media-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* --- Results --- */
+        .results {
+            margin-top: 1.5rem;
+        }
+
+        .result-item {
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 0.5rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item.success { border-left: 3px solid #22c55e; }
+        .result-item.error { border-left: 3px solid #ef4444; }
+
+        .result-filename {
+            font-size: 0.9rem;
+            color: #e5e5e5;
+        }
+
+        .result-size {
+            font-size: 0.8rem;
+            color: #737373;
+        }
+
+        /* --- Downloads list --- */
+        .downloads-list {
+            margin-top: 1rem;
+        }
+
+        .folder-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .folder-name {
+            font-weight: 600;
+            color: #f59e0b;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #171717;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .file-item a {
+            color: #e5e5e5;
+            text-decoration: none;
+        }
+
+        .file-item a:hover { color: #f59e0b; }
+
+        /* --- Status messages --- */
+        .status {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status.visible { display: block; }
+        .status.loading { background: #1e1b4b; color: #a5b4fc; }
+        .status.success { background: #052e16; color: #86efac; }
+        .status.error { background: #450a0a; color: #fca5a5; }
+
+        /* --- Spinner --- */
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #a5b4fc;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Batch results --- */
+        .batch-summary {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #171717;
+            border-radius: 0.5rem;
+        }
+
+        .batch-stat {
+            text-align: center;
+        }
+
+        .batch-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .batch-stat-label {
+            font-size: 0.8rem;
+            color: #737373;
+        }
+
+        .batch-stat-number.green { color: #22c55e; }
+        .batch-stat-number.red { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Insta Downloader</h1>
+        <p class="subtitle">Scarica foto e video da Instagram. Solo profili pubblici.</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="single">Singolo URL</button>
+            <button class="tab" data-tab="batch">Batch (piu URL)</button>
+            <button class="tab" data-tab="downloads">Scaricati</button>
+        </div>
+
+        <!-- Single URL -->
+        <div class="tab-content active" id="tab-single">
+            <div class="input-group">
+                <input type="text" id="url-input" placeholder="Incolla URL Instagram (post, reel, carousel)..." />
+                <button id="preview-btn" onclick="previewUrl()">Anteprima</button>
+            </div>
+
+            <div class="status" id="single-status"></div>
+
+            <div class="preview" id="preview-area">
+                <div class="preview-header">
+                    <span class="preview-owner" id="preview-owner"></span>
+                    <span class="preview-meta" id="preview-meta"></span>
+                </div>
+                <p class="preview-caption" id="preview-caption"></p>
+                <div class="media-grid" id="preview-media"></div>
+                <button id="download-btn" onclick="downloadUrl()">Scarica tutto</button>
+            </div>
+
+            <div class="results" id="single-results"></div>
+        </div>
+
+        <!-- Batch -->
+        <div class="tab-content" id="tab-batch">
+            <textarea id="batch-input" placeholder="Incolla gli URL Instagram, uno per riga..."></textarea>
+            <p class="hint">Un URL per riga. Supporta post, reel e carousel.</p>
+            <button id="batch-btn" onclick="batchDownload()">Scarica tutti</button>
+
+            <div class="status" id="batch-status"></div>
+
+            <div id="batch-results"></div>
+        </div>
+
+        <!-- Downloads -->
+        <div class="tab-content" id="tab-downloads">
+            <button onclick="loadDownloads()" style="margin-bottom: 1rem;">Aggiorna lista</button>
+            <div class="downloads-list" id="downloads-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Tabs ---
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+
+                if (tab.dataset.tab === 'downloads') loadDownloads();
+            });
+        });
+
+        // --- Status helper ---
+        function showStatus(id, type, message) {
+            const el = document.getElementById(id);
+            el.className = 'status visible ' + type;
+            el.innerHTML = type === 'loading'
+                ? '<span class="spinner"></span>' + message
+                : message;
+        }
+
+        function hideStatus(id) {
+            document.getElementById(id).className = 'status';
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // --- Single URL ---
+        let currentShortcode = null;
+
+        async function previewUrl() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) return;
+
+            const previewArea = document.getElementById('preview-area');
+            previewArea.classList.remove('visible');
+            document.getElementById('single-results').innerHTML = '';
+            showStatus('single-status', 'loading', 'Caricamento anteprima...');
+
+            try {
+                const res = await fetch('/api/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showStatus('single-status', 'error', data.error);
+                    return;
+                }
+
+                hideStatus('single-status');
+                currentShortcode = data.shortcode;
+
+                document.getElementById('preview-owner').textContent = '@' + data.owner;
+
+                const mediaCount = data.media_count;
+                const type = data.typename === 'GraphSidecar' ? 'Carousel' :
+                             data.media[0]?.is_video ? 'Video/Reel' : 'Foto';
+                document.getElementById('preview-meta').textContent =
+                    type + ' · ' + mediaCount + ' file · ' + new Date(data.date).toLocaleDateString('it');
+
+                document.getElementById('preview-caption').textContent = data.caption || '';
+
+                const grid = document.getElementById('preview-media');
+                grid.innerHTML = '';
+                data.media.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'media-item';
+                    item.innerHTML = `
+                        <img src="${m.thumbnail}" alt="" loading="lazy" />
+                        ${m.is_video ? '<span class="media-badge">VIDEO</span>' : ''}
+                    `;
+                    grid.appendChild(item);
+                });
+
+                previewArea.classList.add('visible');
+            } catch (err) {
+                showStatus('single-status', 'error', 'Errore di connessione: ' + err.message);
+            }
+        }
+
+        async function downloadUrl() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) return;
+
+            const btn = document.getElementById('download-btn');
+            btn.disabled = true;
+            btn.textContent = 'Scaricamento...';
+            showStatus('single-status', 'loading', 'Download in corso...');
+
+            try {
+                const res = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showStatus('single-status', 'error', data.error);
+                    return;
+                }
+
+                showStatus('single-status', 'success',
+                    `${data.total_files} file scaricati in downloads/${data.folder}/`);
+
+                const resultsEl = document.getElementById('single-results');
+                resultsEl.innerHTML = '';
+                data.files.forEach(f => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item success';
+                    item.innerHTML = `
+                        <span class="result-filename">
+                            <a href="/downloads/${f.path}" target="_blank">${f.filename}</a>
+                        </span>
+                        <span class="result-size">${formatSize(f.size)}${f.is_video ? ' · Video' : ''}</span>
+                    `;
+                    resultsEl.appendChild(item);
+                });
+            } catch (err) {
+                showStatus('single-status', 'error', 'Errore: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Scarica tutto';
+            }
+        }
+
+        // Enter key per anteprima
+        document.getElementById('url-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') previewUrl();
+        });
+
+        // --- Batch ---
+        async function batchDownload() {
+            const text = document.getElementById('batch-input').value.trim();
+            if (!text) return;
+
+            const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+            if (urls.length === 0) return;
+
+            const btn = document.getElementById('batch-btn');
+            btn.disabled = true;
+            btn.textContent = `Scaricamento 0/${urls.length}...`;
+            showStatus('batch-status', 'loading', `Scaricamento di ${urls.length} URL in corso...`);
+            document.getElementById('batch-results').innerHTML = '';
+
+            try {
+                const res = await fetch('/api/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showStatus('batch-status', 'error', data.error);
+                    return;
+                }
+
+                showStatus('batch-status', 'success',
+                    `Completato: ${data.success} scaricati, ${data.failed} errori`);
+
+                const resultsEl = document.getElementById('batch-results');
+
+                // Summary
+                resultsEl.innerHTML = `
+                    <div class="batch-summary">
+                        <div class="batch-stat">
+                            <div class="batch-stat-number">${data.total}</div>
+                            <div class="batch-stat-label">Totale</div>
+                        </div>
+                        <div class="batch-stat">
+                            <div class="batch-stat-number green">${data.success}</div>
+                            <div class="batch-stat-label">Scaricati</div>
+                        </div>
+                        <div class="batch-stat">
+                            <div class="batch-stat-number red">${data.failed}</div>
+                            <div class="batch-stat-label">Errori</div>
+                        </div>
+                    </div>
+                `;
+
+                data.results.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item ' + (r.success ? 'success' : 'error');
+                    if (r.success) {
+                        item.innerHTML = `
+                            <span class="result-filename">@${r.owner} — ${r.total_files} file</span>
+                            <span class="result-size">downloads/${r.folder}/</span>
+                        `;
+                    } else {
+                        item.innerHTML = `
+                            <span class="result-filename" style="color:#fca5a5">${r.url}</span>
+                            <span class="result-size" style="color:#fca5a5">${r.error}</span>
+                        `;
+                    }
+                    resultsEl.appendChild(item);
+                });
+            } catch (err) {
+                showStatus('batch-status', 'error', 'Errore: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Scarica tutti';
+            }
+        }
+
+        // --- Downloads list ---
+        async function loadDownloads() {
+            const listEl = document.getElementById('downloads-list');
+            listEl.innerHTML = '<p style="color:#737373">Caricamento...</p>';
+
+            try {
+                const res = await fetch('/api/downloads');
+                const data = await res.json();
+
+                const folders = Object.keys(data);
+                if (folders.length === 0) {
+                    listEl.innerHTML = '<p style="color:#737373">Nessun file scaricato.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                folders.forEach(folder => {
+                    const group = document.createElement('div');
+                    group.className = 'folder-group';
+
+                    let filesHtml = '';
+                    data[folder].forEach(f => {
+                        filesHtml += `
+                            <div class="file-item">
+                                <a href="/downloads/${f.path}" target="_blank">${f.filename}</a>
+                                <span style="color:#737373">${formatSize(f.size)}${f.is_video ? ' · Video' : ''}</span>
+                            </div>
+                        `;
+                    });
+
+                    group.innerHTML = `
+                        <div class="folder-name">@${folder} (${data[folder].length} file)</div>
+                        ${filesHtml}
+                    `;
+                    listEl.appendChild(group);
+                });
+            } catch (err) {
+                listEl.innerHTML = `<p style="color:#fca5a5">Errore: ${err.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
