@@ -87,6 +87,7 @@
         }
 
         textarea {
+            width: 100%;
             min-height: 8rem;
             resize: vertical;
             font-family: inherit;
@@ -118,6 +119,17 @@
             cursor: not-allowed;
         }
 
+        .btn-secondary {
+            background: #262626;
+            color: #e5e5e5;
+        }
+        .btn-secondary:hover { background: #333; }
+
+        .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
         /* --- Preview --- */
         .preview {
             background: #171717;
@@ -134,7 +146,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .preview-owner {
@@ -154,11 +166,28 @@
             line-height: 1.5;
         }
 
+        .selection-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .selection-info {
+            color: #737373;
+            font-size: 0.85rem;
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
         .media-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
             gap: 0.75rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
         }
 
         .media-item {
@@ -167,12 +196,23 @@
             overflow: hidden;
             aspect-ratio: 1;
             background: #262626;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
         .media-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: opacity 0.2s;
+        }
+
+        .media-item.deselected {
+            opacity: 0.35;
+        }
+
+        .media-item.deselected img {
+            filter: grayscale(1);
         }
 
         .media-badge {
@@ -183,6 +223,44 @@
             color: #fff;
             padding: 0.2rem 0.5rem;
             border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .media-check {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .media-item:not(.deselected) .media-check {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: #0a0a0a;
+        }
+
+        .media-index {
+            position: absolute;
+            bottom: 0.5rem;
+            left: 0.5rem;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 0.75rem;
             font-weight: 600;
         }
@@ -206,24 +284,50 @@
         .result-item.success { border-left: 3px solid #22c55e; }
         .result-item.error { border-left: 3px solid #ef4444; }
 
-        .result-filename {
-            font-size: 0.9rem;
-            color: #e5e5e5;
-        }
+        .result-filename { font-size: 0.9rem; }
+        .result-filename a { color: #e5e5e5; text-decoration: none; }
+        .result-filename a:hover { color: #f59e0b; }
 
         .result-size {
             font-size: 0.8rem;
             color: #737373;
         }
 
-        /* --- Downloads list --- */
-        .downloads-list {
-            margin-top: 1rem;
+        /* --- Success banner --- */
+        .success-banner {
+            background: #052e16;
+            border: 1px solid #166534;
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
         }
 
-        .folder-group {
-            margin-bottom: 1.5rem;
+        .success-banner.visible { display: block; }
+
+        .success-banner h3 {
+            color: #86efac;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
         }
+
+        .success-banner p {
+            color: #4ade80;
+            font-size: 0.9rem;
+        }
+
+        .success-banner .folder-path {
+            font-family: 'SF Mono', monospace;
+            background: rgba(255,255,255,0.1);
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        /* --- Downloads list --- */
+        .downloads-list { margin-top: 1rem; }
+
+        .folder-group { margin-bottom: 1.5rem; }
 
         .folder-name {
             font-weight: 600;
@@ -250,6 +354,15 @@
 
         .file-item a:hover { color: #f59e0b; }
 
+        .file-thumb {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.25rem;
+            object-fit: cover;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
         /* --- Status messages --- */
         .status {
             padding: 0.75rem 1rem;
@@ -264,7 +377,6 @@
         .status.success { background: #052e16; color: #86efac; }
         .status.error { background: #450a0a; color: #fca5a5; }
 
-        /* --- Spinner --- */
         .spinner {
             display: inline-block;
             width: 1rem;
@@ -279,7 +391,7 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- Batch results --- */
+        /* --- Batch --- */
         .batch-summary {
             display: flex;
             gap: 1.5rem;
@@ -289,22 +401,22 @@
             border-radius: 0.5rem;
         }
 
-        .batch-stat {
-            text-align: center;
-        }
-
-        .batch-stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .batch-stat-label {
-            font-size: 0.8rem;
-            color: #737373;
-        }
-
+        .batch-stat { text-align: center; }
+        .batch-stat-number { font-size: 1.5rem; font-weight: 700; }
+        .batch-stat-label { font-size: 0.8rem; color: #737373; }
         .batch-stat-number.green { color: #22c55e; }
         .batch-stat-number.red { color: #ef4444; }
+
+        /* --- Loading overlay on media items --- */
+        .media-item.downloading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -312,7 +424,6 @@
         <h1>Insta Downloader</h1>
         <p class="subtitle">Scarica foto e video da Instagram. Solo profili pubblici.</p>
 
-        <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" data-tab="single">Singolo URL</button>
             <button class="tab" data-tab="batch">Batch (piu URL)</button>
@@ -334,8 +445,22 @@
                     <span class="preview-meta" id="preview-meta"></span>
                 </div>
                 <p class="preview-caption" id="preview-caption"></p>
+
+                <div class="selection-bar" id="selection-bar" style="display:none">
+                    <span class="selection-info" id="selection-info"></span>
+                    <div class="selection-actions">
+                        <button class="btn-secondary btn-small" onclick="toggleSelectAll()">Seleziona/Deseleziona tutti</button>
+                    </div>
+                </div>
+
                 <div class="media-grid" id="preview-media"></div>
-                <button id="download-btn" onclick="downloadUrl()">Scarica tutto</button>
+
+                <button id="download-btn" onclick="downloadSelected()">Scarica tutto</button>
+            </div>
+
+            <div class="success-banner" id="success-banner">
+                <h3 id="success-title"></h3>
+                <p id="success-detail"></p>
             </div>
 
             <div class="results" id="single-results"></div>
@@ -348,7 +473,6 @@
             <button id="batch-btn" onclick="batchDownload()">Scarica tutti</button>
 
             <div class="status" id="batch-status"></div>
-
             <div id="batch-results"></div>
         </div>
 
@@ -360,6 +484,11 @@
     </div>
 
     <script>
+        // --- State ---
+        let currentMedia = [];      // media items from preview
+        let selectedIndices = new Set();  // selected indices (1-based)
+        let currentUrl = '';
+
         // --- Tabs ---
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -367,12 +496,11 @@
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-
                 if (tab.dataset.tab === 'downloads') loadDownloads();
             });
         });
 
-        // --- Status helper ---
+        // --- Helpers ---
         function showStatus(id, type, message) {
             const el = document.getElementById(id);
             el.className = 'status visible ' + type;
@@ -391,16 +519,77 @@
             return (bytes / 1048576).toFixed(1) + ' MB';
         }
 
-        // --- Single URL ---
-        let currentShortcode = null;
+        function proxyUrl(url) {
+            return '/api/proxy-image?url=' + encodeURIComponent(url);
+        }
 
+        // --- Selection ---
+        function updateSelectionUI() {
+            const total = currentMedia.length;
+            const selected = selectedIndices.size;
+
+            // Update selection info
+            const infoEl = document.getElementById('selection-info');
+            if (selected === total) {
+                infoEl.textContent = `Tutte le ${total} foto selezionate`;
+            } else {
+                infoEl.textContent = `${selected} di ${total} selezionate`;
+            }
+
+            // Update download button
+            const btn = document.getElementById('download-btn');
+            if (selected === 0) {
+                btn.disabled = true;
+                btn.textContent = 'Seleziona almeno una foto';
+            } else if (selected === total) {
+                btn.disabled = false;
+                btn.textContent = `Scarica tutto (${total})`;
+            } else {
+                btn.disabled = false;
+                btn.textContent = `Scarica ${selected} selezionat${selected === 1 ? 'a' : 'e'}`;
+            }
+
+            // Update media items
+            document.querySelectorAll('.media-item').forEach(item => {
+                const idx = parseInt(item.dataset.index);
+                if (selectedIndices.has(idx)) {
+                    item.classList.remove('deselected');
+                    item.querySelector('.media-check').textContent = '✓';
+                } else {
+                    item.classList.add('deselected');
+                    item.querySelector('.media-check').textContent = '';
+                }
+            });
+        }
+
+        function toggleMediaItem(index) {
+            if (selectedIndices.has(index)) {
+                selectedIndices.delete(index);
+            } else {
+                selectedIndices.add(index);
+            }
+            updateSelectionUI();
+        }
+
+        function toggleSelectAll() {
+            if (selectedIndices.size === currentMedia.length) {
+                selectedIndices.clear();
+            } else {
+                currentMedia.forEach(m => selectedIndices.add(m.index));
+            }
+            updateSelectionUI();
+        }
+
+        // --- Single URL ---
         async function previewUrl() {
             const url = document.getElementById('url-input').value.trim();
             if (!url) return;
 
+            currentUrl = url;
             const previewArea = document.getElementById('preview-area');
             previewArea.classList.remove('visible');
             document.getElementById('single-results').innerHTML = '';
+            document.getElementById('success-banner').classList.remove('visible');
             showStatus('single-status', 'loading', 'Caricamento anteprima...');
 
             try {
@@ -417,39 +606,50 @@
                 }
 
                 hideStatus('single-status');
-                currentShortcode = data.shortcode;
+                currentMedia = data.media;
+
+                // Select all by default
+                selectedIndices = new Set(data.media.map(m => m.index));
 
                 document.getElementById('preview-owner').textContent = '@' + data.owner;
 
-                const mediaCount = data.media_count;
                 const type = data.typename === 'GraphSidecar' ? 'Carousel' :
                              data.media[0]?.is_video ? 'Video/Reel' : 'Foto';
                 document.getElementById('preview-meta').textContent =
-                    type + ' · ' + mediaCount + ' file · ' + new Date(data.date).toLocaleDateString('it');
+                    type + ' · ' + data.media_count + ' file · ' + new Date(data.date).toLocaleDateString('it');
 
                 document.getElementById('preview-caption').textContent = data.caption || '';
 
+                // Show selection bar only for carousels
+                const selBar = document.getElementById('selection-bar');
+                selBar.style.display = data.media_count > 1 ? 'flex' : 'none';
+
+                // Render media grid
                 const grid = document.getElementById('preview-media');
                 grid.innerHTML = '';
                 data.media.forEach(m => {
                     const item = document.createElement('div');
                     item.className = 'media-item';
+                    item.dataset.index = m.index;
+                    item.onclick = () => toggleMediaItem(m.index);
                     item.innerHTML = `
-                        <img src="${m.thumbnail}" alt="" loading="lazy" />
+                        <img src="${proxyUrl(m.thumbnail)}" alt="" loading="lazy" />
+                        <div class="media-check">✓</div>
                         ${m.is_video ? '<span class="media-badge">VIDEO</span>' : ''}
+                        ${data.media_count > 1 ? '<span class="media-index">' + m.index + '</span>' : ''}
                     `;
                     grid.appendChild(item);
                 });
 
+                updateSelectionUI();
                 previewArea.classList.add('visible');
             } catch (err) {
                 showStatus('single-status', 'error', 'Errore di connessione: ' + err.message);
             }
         }
 
-        async function downloadUrl() {
-            const url = document.getElementById('url-input').value.trim();
-            if (!url) return;
+        async function downloadSelected() {
+            if (selectedIndices.size === 0) return;
 
             const btn = document.getElementById('download-btn');
             btn.disabled = true;
@@ -457,10 +657,14 @@
             showStatus('single-status', 'loading', 'Download in corso...');
 
             try {
+                const selected = currentMedia.length === selectedIndices.size
+                    ? null  // all selected = don't filter
+                    : Array.from(selectedIndices);
+
                 const res = await fetch('/api/download', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
+                    body: JSON.stringify({ url: currentUrl, selected })
                 });
                 const data = await res.json();
 
@@ -469,9 +673,17 @@
                     return;
                 }
 
-                showStatus('single-status', 'success',
-                    `${data.total_files} file scaricati in downloads/${data.folder}/`);
+                hideStatus('single-status');
 
+                // Success banner
+                const banner = document.getElementById('success-banner');
+                document.getElementById('success-title').textContent =
+                    `${data.total_files} file scaricati da @${data.owner}`;
+                document.getElementById('success-detail').innerHTML =
+                    `Salvati in <span class="folder-path">downloads/${data.folder}/</span>`;
+                banner.classList.add('visible');
+
+                // File list
                 const resultsEl = document.getElementById('single-results');
                 resultsEl.innerHTML = '';
                 data.files.forEach(f => {
@@ -479,6 +691,7 @@
                     item.className = 'result-item success';
                     item.innerHTML = `
                         <span class="result-filename">
+                            <img class="file-thumb" src="/downloads/${f.path}" onerror="this.style.display='none'" />
                             <a href="/downloads/${f.path}" target="_blank">${f.filename}</a>
                         </span>
                         <span class="result-size">${formatSize(f.size)}${f.is_video ? ' · Video' : ''}</span>
@@ -488,12 +701,11 @@
             } catch (err) {
                 showStatus('single-status', 'error', 'Errore: ' + err.message);
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Scarica tutto';
+                updateSelectionUI();
             }
         }
 
-        // Enter key per anteprima
+        // Enter key
         document.getElementById('url-input').addEventListener('keydown', e => {
             if (e.key === 'Enter') previewUrl();
         });
@@ -529,8 +741,6 @@
                     `Completato: ${data.success} scaricati, ${data.failed} errori`);
 
                 const resultsEl = document.getElementById('batch-results');
-
-                // Summary
                 resultsEl.innerHTML = `
                     <div class="batch-summary">
                         <div class="batch-stat">
@@ -594,9 +804,11 @@
 
                     let filesHtml = '';
                     data[folder].forEach(f => {
+                        const thumb = f.is_video ? '' :
+                            `<img class="file-thumb" src="/downloads/${f.path}" onerror="this.style.display='none'" />`;
                         filesHtml += `
                             <div class="file-item">
-                                <a href="/downloads/${f.path}" target="_blank">${f.filename}</a>
+                                <span>${thumb}<a href="/downloads/${f.path}" target="_blank">${f.filename}</a></span>
                                 <span style="color:#737373">${formatSize(f.size)}${f.is_video ? ' · Video' : ''}</span>
                             </div>
                         `;

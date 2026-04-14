@@ -1,17 +1,20 @@
 """
 Insta Downloader — Web app locale per scaricare foto e video da Instagram.
-Avvia con: python app.py → apre http://localhost:5000
+Avvia con: python app.py → apre http://localhost:5050
 """
 
 import os
-import json
 import re
 import shutil
+import hashlib
+import tempfile
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import quote
 
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response
 import instaloader
+import requests as http_requests
 
 app = Flask(__name__)
 
@@ -30,6 +33,9 @@ L = instaloader.Instaloader(
     post_metadata_txt_pattern="",
 )
 
+# Cache per le info dei post (evita richieste doppie a Instagram)
+_post_cache: dict[str, "instaloader.Post"] = {}
+
 
 def extract_shortcode(url: str) -> str | None:
     """Estrai lo shortcode da un URL Instagram (post, reel, carousel)."""
@@ -45,87 +51,68 @@ def extract_shortcode(url: str) -> str | None:
     return None
 
 
-def get_post_info(shortcode: str) -> dict:
-    """Scarica le info di un post senza scaricare i file."""
-    post = instaloader.Post.from_shortcode(L.context, shortcode)
+def get_post(shortcode: str) -> "instaloader.Post":
+    """Ottieni un post (con cache)."""
+    if shortcode not in _post_cache:
+        _post_cache[shortcode] = instaloader.Post.from_shortcode(L.context, shortcode)
+    return _post_cache[shortcode]
 
-    media_items = []
+
+def get_media_items(post: "instaloader.Post") -> list[dict]:
+    """Estrai la lista dei media da un post."""
+    items = []
 
     if post.typename == "GraphSidecar":
-        # Carousel — più foto/video
         for i, node in enumerate(post.get_sidecar_nodes(), 1):
-            media_items.append({
+            items.append({
                 "index": i,
                 "is_video": node.is_video,
                 "url": node.video_url if node.is_video else node.display_url,
                 "thumbnail": node.display_url,
             })
     elif post.is_video:
-        media_items.append({
+        items.append({
             "index": 1,
             "is_video": True,
             "url": post.video_url,
-            "thumbnail": post.url,  # thumbnail del video
+            "thumbnail": post.url,
         })
     else:
-        media_items.append({
+        items.append({
             "index": 1,
             "is_video": False,
             "url": post.url,
             "thumbnail": post.url,
         })
 
-    return {
-        "shortcode": shortcode,
-        "owner": post.owner_username,
-        "caption": (post.caption or "")[:200],
-        "date": post.date_utc.isoformat(),
-        "media_count": len(media_items),
-        "media": media_items,
-        "typename": post.typename,
-    }
+    return items
 
 
-def download_post(shortcode: str) -> dict:
-    """Scarica tutti i media di un post nella cartella downloads/username/."""
-    post = instaloader.Post.from_shortcode(L.context, shortcode)
-    username = post.owner_username
-
-    # Cartella di destinazione: downloads/username/
-    dest_dir = DOWNLOADS_DIR / username
+def download_media_item(url: str, dest_dir: Path, filename: str) -> dict:
+    """Scarica un singolo file media."""
     dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = dest_dir / filename
 
-    # Instaloader scarica in una temp dir, poi spostiamo
-    import tempfile
-    with tempfile.TemporaryDirectory() as tmpdir:
-        L.dirname_pattern = tmpdir
-        L.download_post(post, target="")
+    # Evita sovrascritture
+    if dest_path.exists():
+        stem = dest_path.stem
+        suffix = dest_path.suffix
+        timestamp = datetime.now().strftime("%H%M%S")
+        dest_path = dest_dir / f"{stem}_{timestamp}{suffix}"
 
-        downloaded_files = []
-        for f in Path(tmpdir).iterdir():
-            if f.is_file() and not f.name.startswith("."):
-                # Rinomina con timestamp per evitare sovrascritture
-                dest_path = dest_dir / f.name
-                if dest_path.exists():
-                    stem = f.stem
-                    suffix = f.suffix
-                    timestamp = datetime.now().strftime("%H%M%S")
-                    dest_path = dest_dir / f"{stem}_{timestamp}{suffix}"
+    resp = http_requests.get(url, headers={
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+    }, timeout=60)
+    resp.raise_for_status()
 
-                shutil.move(str(f), str(dest_path))
-                downloaded_files.append({
-                    "filename": dest_path.name,
-                    "path": str(dest_path.relative_to(DOWNLOADS_DIR)),
-                    "size": dest_path.stat().st_size,
-                    "is_video": dest_path.suffix.lower() in (".mp4", ".mov", ".webm"),
-                })
+    with open(dest_path, "wb") as f:
+        f.write(resp.content)
 
     return {
-        "shortcode": shortcode,
-        "owner": username,
-        "folder": str(dest_dir.relative_to(DOWNLOADS_DIR)),
-        "files": downloaded_files,
-        "total_files": len(downloaded_files),
+        "filename": dest_path.name,
+        "path": str(dest_path.relative_to(DOWNLOADS_DIR)),
+        "size": dest_path.stat().st_size,
+        "is_video": dest_path.suffix.lower() in (".mp4", ".mov", ".webm"),
     }
 
 
@@ -134,6 +121,27 @@ def download_post(shortcode: str) -> dict:
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/api/proxy-image")
+def proxy_image():
+    """Proxy per le immagini Instagram (aggira hotlink protection)."""
+    img_url = request.args.get("url", "")
+    if not img_url or "instagram" not in img_url and "cdninstagram" not in img_url and "fbcdn" not in img_url:
+        return "URL non valido", 400
+
+    try:
+        resp = http_requests.get(img_url, headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+        }, timeout=15)
+        resp.raise_for_status()
+
+        content_type = resp.headers.get("Content-Type", "image/jpeg")
+        return Response(resp.content, content_type=content_type, headers={
+            "Cache-Control": "public, max-age=3600",
+        })
+    except Exception:
+        return "Errore proxy immagine", 502
 
 
 @app.route("/api/preview", methods=["POST"])
@@ -150,8 +158,18 @@ def api_preview():
         return jsonify({"error": "URL Instagram non valido. Usa un link a un post, reel o carousel."}), 400
 
     try:
-        info = get_post_info(shortcode)
-        return jsonify(info)
+        post = get_post(shortcode)
+        media_items = get_media_items(post)
+
+        return jsonify({
+            "shortcode": shortcode,
+            "owner": post.owner_username,
+            "caption": (post.caption or "")[:200],
+            "date": post.date_utc.isoformat(),
+            "media_count": len(media_items),
+            "media": media_items,
+            "typename": post.typename,
+        })
     except instaloader.exceptions.ProfileNotExistsException:
         return jsonify({"error": "Profilo non trovato o privato"}), 404
     except instaloader.exceptions.LoginRequiredException:
@@ -162,9 +180,10 @@ def api_preview():
 
 @app.route("/api/download", methods=["POST"])
 def api_download():
-    """Scarica tutti i media di un URL Instagram."""
+    """Scarica media selezionati di un URL Instagram."""
     data = request.get_json()
     url = data.get("url", "").strip()
+    selected_indices = data.get("selected", None)  # lista di indici (1-based), None = tutti
 
     if not url:
         return jsonify({"error": "URL mancante"}), 400
@@ -174,8 +193,36 @@ def api_download():
         return jsonify({"error": "URL Instagram non valido"}), 400
 
     try:
-        result = download_post(shortcode)
-        return jsonify(result)
+        post = get_post(shortcode)
+        username = post.owner_username
+        media_items = get_media_items(post)
+
+        # Filtra per selezione
+        if selected_indices:
+            media_items = [m for m in media_items if m["index"] in selected_indices]
+
+        if not media_items:
+            return jsonify({"error": "Nessun media selezionato"}), 400
+
+        dest_dir = DOWNLOADS_DIR / username
+        downloaded_files = []
+
+        date_str = post.date_utc.strftime("%Y-%m-%d_%H-%M-%S_UTC")
+
+        for item in media_items:
+            ext = ".mp4" if item["is_video"] else ".jpg"
+            filename = f"{date_str}_{item['index']}{ext}"
+
+            file_info = download_media_item(item["url"], dest_dir, filename)
+            downloaded_files.append(file_info)
+
+        return jsonify({
+            "shortcode": shortcode,
+            "owner": username,
+            "folder": username,
+            "files": downloaded_files,
+            "total_files": len(downloaded_files),
+        })
     except instaloader.exceptions.ProfileNotExistsException:
         return jsonify({"error": "Profilo non trovato o privato"}), 404
     except instaloader.exceptions.LoginRequiredException:
@@ -205,10 +252,27 @@ def api_batch():
             continue
 
         try:
-            result = download_post(shortcode)
-            result["url"] = url
-            result["success"] = True
-            results.append(result)
+            post = get_post(shortcode)
+            username = post.owner_username
+            media_items = get_media_items(post)
+            dest_dir = DOWNLOADS_DIR / username
+            date_str = post.date_utc.strftime("%Y-%m-%d_%H-%M-%S_UTC")
+
+            downloaded = []
+            for item in media_items:
+                ext = ".mp4" if item["is_video"] else ".jpg"
+                filename = f"{date_str}_{item['index']}{ext}"
+                file_info = download_media_item(item["url"], dest_dir, filename)
+                downloaded.append(file_info)
+
+            results.append({
+                "url": url,
+                "owner": username,
+                "folder": username,
+                "files": downloaded,
+                "total_files": len(downloaded),
+                "success": True,
+            })
         except Exception as e:
             results.append({"url": url, "error": str(e), "success": False})
 
@@ -250,5 +314,5 @@ def serve_download(filepath):
 
 if __name__ == "__main__":
     print("\n  Insta Downloader avviato!")
-    print("  Apri http://localhost:5000 nel browser\n")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    print("  Apri http://localhost:5050 nel browser\n")
+    app.run(host="127.0.0.1", port=5050, debug=True)
