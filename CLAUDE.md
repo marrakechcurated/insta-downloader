@@ -19,26 +19,26 @@ Apri **http://localhost:5050** nel browser.
 
 ## Come si usa
 
-### Modalita 1 — Frontend web (singolo URL)
+### Modalita 1: Frontend web (singolo URL)
 1. Apri `http://localhost:5050`
 2. Incolla un URL Instagram (post, reel, carousel)
 3. Clicca "Anteprima" per vedere cosa scaricherai
 4. Clicca "Scarica tutto"
 5. I file finiscono in `downloads/nome-utente/`
 
-### Modalita 2 — Frontend web (batch)
+### Modalita 2: Frontend web (batch)
 1. Vai nel tab "Batch (piu URL)"
 2. Incolla piu URL, uno per riga
 3. Clicca "Scarica tutti"
 
-### Modalita 3 — Da terminale (batch)
+### Modalita 3: Da terminale (batch)
 ```bash
 cd ~/insta-downloader
 source venv/bin/activate
 python3 batch.py https://www.instagram.com/p/ABC123/ https://www.instagram.com/reel/XYZ789/
 ```
 
-### Modalita 4 — Claude Code scarica per te
+### Modalita 4: Claude Code scarica per te
 Il redattore da a Claude Code una lista di link. Claude Code lancia:
 ```bash
 cd ~/insta-downloader && source venv/bin/activate && python3 batch.py URL1 URL2 URL3
